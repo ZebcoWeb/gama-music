@@ -1,0 +1,4 @@
+py-cord @ https://github.com/Pycord-Development/pycord/archive/refs/heads/master.zip
+requests==2.26.0
+six==1.16.0
+youtube-dl
