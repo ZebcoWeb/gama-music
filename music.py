@@ -11,9 +11,9 @@ from discord.ext.commands.context import Context
 from discord import FFmpegPCMAudio
 from discord.ext import commands
 
-TOKEN = os.environ.get('TOKEN')
+TOKEN = 'ODQwNjMyNTA1ODQ4ODIzODA5.YJbCBw.q8TRudhXTN51ZXibUNDT79tBSpM'
 
-PREFIX = os.environ.get('PREFIX')
+PREFIX = '!'
 
 intents = discord.Intents.all()
 client = commands.Bot(command_prefix=PREFIX, intents=intents)
