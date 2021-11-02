@@ -2,6 +2,7 @@ import asyncio
 import discord
 import youtube_dl
 import re
+import os
 
 from discord import VoiceClient
 from discord.colour import Colour
@@ -10,13 +11,11 @@ from discord.ext.commands.context import Context
 from discord import FFmpegPCMAudio
 from discord.ext import commands
 
-TOKEN = 'ODQwNjMyNTA1ODQ4ODIzODA5.YJbCBw.8498CWiBiuQXst_nKXd0caagZ1c'
+TOKEN = os.environ.get('TOKEN')
 
-PREFIX = '!'
+PREFIX = os.environ.get('PREFIX')
 
 intents = discord.Intents.all()
-intents.members = True
-intents.reactions = True
 client = commands.Bot(command_prefix=PREFIX, intents=intents)
 client.remove_command('help')
 
