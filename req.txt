@@ -2,3 +2,4 @@ py-cord @ https://github.com/Pycord-Development/pycord/archive/refs/heads/master
 requests
 six
 youtube-dl
+PyNaCl
