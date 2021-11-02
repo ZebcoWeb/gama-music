@@ -14,6 +14,7 @@ WORKDIR /music
 
 COPY . .
 
-RUN pip install -r req.txt
+RUN python -m pip install --upgrade pip && \
+    pip install -r req.txt
 
 CMD ["python", "music.py"]
