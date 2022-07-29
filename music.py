@@ -63,19 +63,33 @@ class YTDLSource(discord.PCMVolumeTransformer):
 
         filename = data["url"] if stream else ytdl.prepare_filename(data)
         return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
+    
+    @classmethod
+    async def from_search(cls, query, *, loop=None, stream=False):
+        loop = loop or asyncio.get_event_loop()
+        data = await loop.run_in_executor(
+            None, lambda: ytdl.extract_info(f"ytsearch:{query}", download=not stream)
+        )
+
+        if "entries" in data:
+            # take first item from a playlist
+            data = data["entries"][0]
+
+        filename = data["url"] if stream else ytdl.prepare_filename(data)
+        return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
 
 ytdl_format_options = {
-    'format': 'bestaudio/best',
-    'postprocessors': [{
-        'key': 'FFmpegExtractAudio',
-        'preferredcodec': 'wav',
-        'preferredquality': '192'
-    }],
-    'postprocessor_args': [
-        '-ar', '16000'
-    ],
-    'prefer_ffmpeg': True,
-    'keepvideo': True
+    "format": "bestaudio/best",
+    "outtmpl": "%(extractor)s-%(id)s-%(title)s.%(ext)s",
+    "restrictfilenames": True,
+    "noplaylist": True,
+    "nocheckcertificate": True,
+    "ignoreerrors": False,
+    "logtostderr": False,
+    "quiet": True,
+    "no_warnings": True,
+    "default_search": "auto",
+    "source_address": "0.0.0.0",  # bind to ipv4 since ipv6 addresses cause issues sometimes
 }
 
 ffmpeg_options = {"options": "-vn"}
@@ -108,36 +122,40 @@ async def join_to_vc(ctx: Context, *, channel: discord.VoiceChannel = None):
         )
 
 @client.command(aliases=['p', 'play'])
-async def play_sound(ctx :Context, *, url = None):
+async def play_sound(ctx :Context, *, query = None):
     """Plays from a url (YouTube and mp3 urls are supported)"""
-    if url:
-        if yt_validate(url):
+    if query:
+        if yt_validate(query):
             async with ctx.typing():
-                player = await YTDLSource.from_url(url, loop=client.loop)
+                player = await YTDLSource.from_url(query, loop=client.loop)
                 ctx.voice_client.play(
                     player, after=lambda e: print(f"Player error: {e}") if e else None
                 )
-
                 await ctx.send(embed=green_embed(
                     None,
-                    des=f'Now playing: [{player.title}]({url})'
+                    des=f'Now playing: [{player.title}]({query})'
                 ))
 
-        elif mp3_validate(url):
-            player = FFmpegPCMAudio(url, executable="ffmpeg", **ffmpeg_options)
+        elif mp3_validate(query):
+            player = FFmpegPCMAudio(query, executable="ffmpeg", **ffmpeg_options)
             ctx.voice_client.play(
                 player, after=lambda e: print(f"> Player error: {e}") if e else None
             )
-            title = url.split('/')[-1]
+            title = query.split('/')[-1]
             await ctx.send(embed=green_embed(
                 None,
-                des=f'Now playing: [{title}]({url})'
+                des=f'Now playing: [{title}]({query})'
             ))
         else:
-            await ctx.reply(embed=red_embed(
-                None,
-                des='Your URL is not from YouTube or mp3 source!'
-            ))
+            async with ctx.typing():
+                player = await YTDLSource.from_search(query, loop=client.loop)
+                ctx.voice_client.play(
+                    player, after=lambda e: print(f"Player error: {e}") if e else None
+                )
+                await ctx.send(embed=green_embed(
+                    None,
+                    des=f'Now playing: [{player.title}]({query})'
+                ))
 
     else:
         await ctx.reply(embed=red_embed(
@@ -246,7 +264,6 @@ async def ensure_voice(ctx):
                 None,
                 des='You are not connected to a voice channel'
             ))
-            raise commands.CommandError('Author not connected to a voice channel.')
     elif ctx.voice_client.is_playing():
         ctx.voice_client.stop()
 
