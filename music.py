@@ -39,7 +39,21 @@ def green_embed(title, des):
     embed.set_footer(icon_url=client.user.avatar.url, text=f'Gama music client | {PREFIX}help for more help')
     return embed
 
+ytdl_format_options = {
+    "format": "bestaudio/best",
+    "outtmpl": "%(extractor)s-%(id)s-%(title)s.%(ext)s",
+    "restrictfilenames": True,
+    "noplaylist": True,
+    "nocheckcertificate": True,
+    "ignoreerrors": False,
+    "logtostderr": False,
+    "quiet": True,
+    "no_warnings": True,
+    "default_search": "auto",
+    "source_address": "0.0.0.0",  # bind to ipv4 since ipv6 addresses cause issues sometimes
+}
 
+ffmpeg_options = {"options": "-vn"}
 
 class YTDLSource(discord.PCMVolumeTransformer):
     def __init__(self, source, *, data, volume=0.5):
@@ -78,21 +92,6 @@ class YTDLSource(discord.PCMVolumeTransformer):
         filename = data["url"] if stream else ytdl.prepare_filename(data)
         return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
 
-ytdl_format_options = {
-    "format": "bestaudio/best",
-    "outtmpl": "%(extractor)s-%(id)s-%(title)s.%(ext)s",
-    "restrictfilenames": True,
-    "noplaylist": True,
-    "nocheckcertificate": True,
-    "ignoreerrors": False,
-    "logtostderr": False,
-    "quiet": True,
-    "no_warnings": True,
-    "default_search": "auto",
-    "source_address": "0.0.0.0",  # bind to ipv4 since ipv6 addresses cause issues sometimes
-}
-
-ffmpeg_options = {"options": "-vn"}
 
 ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
 
@@ -127,7 +126,7 @@ async def play_sound(ctx :Context, *, query = None):
     if query:
         if yt_validate(query):
             async with ctx.typing():
-                player = await YTDLSource.from_url(query, loop=client.loop)
+                player = await YTDLSource.from_url(query, loop=client.loop, stream=True)
                 ctx.voice_client.play(
                     player, after=lambda e: print(f"Player error: {e}") if e else None
                 )
@@ -148,7 +147,7 @@ async def play_sound(ctx :Context, *, query = None):
             ))
         else:
             async with ctx.typing():
-                player = await YTDLSource.from_search(query, loop=client.loop)
+                player = await YTDLSource.from_search(query, loop=client.loop, stream=True)
                 ctx.voice_client.play(
                     player, after=lambda e: print(f"Player error: {e}") if e else None
                 )
@@ -289,4 +288,4 @@ async def help_sound(ctx: Context):
 
     # ------------------------
 
-client.run(TOKEN)
+client.run(TOKEN, log_handler=None)
