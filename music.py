@@ -90,7 +90,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
             data = data["entries"][0]
 
         filename = data["url"] if stream else ytdl.prepare_filename(data)
-        return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
+        return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data), data["url"]
 
 
 ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
@@ -147,13 +147,13 @@ async def play_sound(ctx :Context, *, query = None):
             ))
         else:
             async with ctx.typing():
-                player = await YTDLSource.from_search(query, loop=client.loop, stream=True)
+                player, url = await YTDLSource.from_search(query, loop=client.loop, stream=True)
                 ctx.voice_client.play(
                     player, after=lambda e: print(f"Player error: {e}") if e else None
                 )
                 await ctx.send(embed=green_embed(
                     None,
-                    des=f'Now playing: [{player.title}]({query})'
+                    des=f'Now playing: [{player.title}]({url})'
                 ))
 
     else:
